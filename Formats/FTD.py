@@ -301,7 +301,7 @@ class IconTypes(Enum):
 	Alibaba			= 0
 	PhantomThieves	= 1
 	Ryuji			= 2
-	# in SCRIPTCHAT_1002, which doesn't seem to be called
+	# in SCRIPTCHAT_1001
 	UNUSED1			= 3
 	Ann				= 4
 	Yusuke			= 5
@@ -322,8 +322,8 @@ class IconTypes(Enum):
 	Hifumi			= 25
 	Mishima			= 26
 	Yoshida			= 27
-	# in SCRIPTCHAT_841, which doesn't seem to be called
-	UNUSED2			= 28
+	# in SCRIPTCHAT_840
+	SaeUnused		= 28
 	# UNUSED RANGE
 	Maruki			= 31
 	Sumire			= 32
@@ -333,9 +333,9 @@ class IconTypes(Enum):
 	Hanasaki		= 45
 	LalaEscargot	= 46
 	Becky			= 47
-	# in SCRIPTCHAT_985
-	UNK3			= 48
-	# in SCRIPTCHAT_324
+	# in SCRIPTCHAT_984
+	RyujiYusuke		= 48
+	# in SCRIPTCHAT_323
 	UNK4			= 49
 
 
