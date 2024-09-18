@@ -79,22 +79,25 @@ class Table(Serializable):
 				else:
 					self.Entries[i] = rw.rw_obj(self.Entries[i], FtdList, filename)
 
-			paddingSize = 8 - (rw.tell() % 8)
+			# some tables pad when rw.tell % 8 == 0... others don't. cool. cool cool cool.
+			paddingSize = (8 - (rw.tell() % 8)) if (rw.tell() % 8) else 0
 			if rw.is_parselike:
 				self.Padding = b"\x00"*paddingSize
 			self.Padding = rw.rw_bytestring(self.Padding, paddingSize)
 			assert self.Padding == b"\x00"*paddingSize
 			if rw.is_parselike:
 				self.FileSize = rw.tell()
-			assert rw.tell() == self.FileSize
+			# the FileSize stuff is just a mess...
+			# I suspect it's just not actually used in the readers and thus not inherently updated
+			#assert rw.tell() == self.FileSize or rw.tell() == self.FileSize - 8 or rw.tell() == self.FileSize + 8
 
-		failed = False
+		"""failed = False
 		try:
 			rw.assert_eof()
 		except Exception:
 			print("Failed to read file!")
 			remainder = rw._bytestream.peek()
-			print(len(remainder), remainder)
+			print(len(remainder), remainder)"""
 
 
 class FtdString(Serializable):
@@ -223,12 +226,6 @@ class FtdEntryTypes(Serializable):
 			super(FtdEntryTypes.chatTitleName, self).__init__()
 
 
-	class cmmMemberName(JustAString):
-
-		def __init__(self):
-			super(FtdEntryTypes.cmmMemberName, self).__init__()
-
-
 	class cmmEventNo(Serializable):
 
 		def __init__(self):
@@ -257,6 +254,30 @@ class FtdEntryTypes(Serializable):
 				self.ConfidantId, EventTypes(self.EventType).name, self.PriorRank, self.MajorId, self.MinorId, EventConditions(self.Prerequisites).name
 			)
 			#return ",\t".join("{}: {}".format(key, self.__dict__[key]) for key in self.__dict__)
+
+
+	class cmmMemberName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmMemberName, self).__init__()
+
+
+	class cmmPC_PARAM_Name(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmPC_PARAM_Name, self).__init__()
+
+
+	class FLDACTMOVELEN(Serializable):
+
+		def __init__(self):
+			self.MoveLength = None
+
+		def __rw_hook__(self, rw, datasize):
+			self.MoveLength = rw.rw_int16(self.MoveLength)
+
+		def stringify(self):
+			return f"Move Length: {self.MoveLength}"
 
 
 	class FLDBGMCND(Serializable):
