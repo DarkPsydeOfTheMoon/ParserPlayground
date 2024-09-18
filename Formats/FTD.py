@@ -6,32 +6,30 @@ from .exbip.Descriptors import StreamHandlers
 class Table(Serializable):
 
 	def __init__(self):
-		# variables
-		self.TableStart = None
-		self.Version = None
-		self.Magic = None
-		self.Endianness = None
-		self.FileSize = None
-		self.DataType = None
-		self.DataCount = None
-		self.DataOffsets = None
+		self.Version		= None
+		self.Magic			= None
+		self.Endianness		= None
+		self.FileSize		= None
+		self.DataType		= None
+		self.DataCount		= None
+		self.DataOffsets	= None
 
-		self.Entries = None
-		self.EntryPads = None
-		self.Padding = None
+		self.Entries		= None
+		self.EntryPads		= None
+		self.Padding		= None
 
 	def update_offsets(self, filename):
 		self.tobytes(filename=filename)
+		# sometimes needs to be done twice, apparently, to make all the padding work....
+		self.tobytes(filename=filename)
 
 	def write_right(self, path, filename):
-		self.update_offsets(filename=filename)
-		# sometimes needs to be done twice, apparently, to make all the padding work....
 		self.update_offsets(filename=filename)
 		self.write(path, filename=filename)
 
 	def pretty_print(self, indent_level=0):
 		for i in range(self.DataCount):
-			print("{}TABLE ENTRY {}:".format(" "*indent_level, i+1))
+			print("{}TABLE ENTRY {}:".format(" "*indent_level, i))
 			if self.DataType:
 				print("{}{}".format(" "*(indent_level+1), self.Entries[i].Data))
 			else:
@@ -40,46 +38,63 @@ class Table(Serializable):
 
 	def __rw_hook__(self, rw, filename):
 
-		self.TableStart = rw.tell()
-
 		rw.endianness = ">"
-		self.Version = rw.rw_uint32(self.Version)
-		self.Magic = rw.rw_string(self.Magic, 3)
-		if rw.is_parselike: # writer
-			self.Magic = self.Magic.decode()
-		assert self.Magic == "FTD"
-		self.Endianness = rw.rw_uint8(self.Endianness)
-		if (self.Endianness == 0):
-			rw.endianness = "<"
+		with rw.relative_origin():
 
-		self.FileSize = rw.rw_uint32(self.FileSize)
-		self.DataType = rw.rw_int16(self.DataType)
-		assert self.DataType == 0 or self.DataType == 1
+			self.Version = rw.rw_uint32(self.Version)
+			self.Magic = rw.rw_string(self.Magic, 3)
+			if rw.is_parselike: # writer
+				self.Magic = self.Magic.decode()
+			assert self.Magic == "FTD"
+			self.Endianness = rw.rw_uint8(self.Endianness)
+			if (self.Endianness == 0):
+				rw.endianness = "<"
 
-		if rw.is_parselike:
-			self.DataCount = len(self.Entries)
-		self.DataCount = rw.rw_int16(self.DataCount)
-		self.DataOffsets = rw.rw_uint32s(self.DataOffsets, self.DataCount)
+			self.FileSize = rw.rw_uint32(self.FileSize)
+			self.DataType = rw.rw_int16(self.DataType)
+			assert self.DataType == 0 or self.DataType == 1
 
-		self.EntryPads = [None]*self.DataCount
-		if rw.is_constructlike: # reader
-			self.Entries = [None]*self.DataCount
-		elif rw.is_parselike:
-			self.DataOffsets = [None]*self.DataCount
-		for i in range(self.DataCount):
-			if rw.is_constructlike:
-				paddingSize = self.DataOffsets[i] - rw.tell()
+			if rw.is_parselike:
+				self.DataCount = len(self.Entries)
+			self.DataCount = rw.rw_int16(self.DataCount)
+			self.DataOffsets = rw.rw_uint32s(self.DataOffsets, self.DataCount)
+
+			self.EntryPads = [None]*self.DataCount
+			if rw.is_constructlike: # reader
+				self.Entries = [None]*self.DataCount
 			elif rw.is_parselike:
-				self.DataOffsets[i] = rw.tell()
-				paddingSize = 0
-				self.EntryPads[i] = b""
-			self.EntryPads[i] = rw.rw_bytestring(self.EntryPads[i], paddingSize)
-			assert self.EntryPads[i] == b"\x00"*paddingSize
-			assert rw.tell() == self.DataOffsets[i]
-			if self.DataType:
-				self.Entries[i] = rw.rw_obj(self.Entries[i], FtdString)
-			else:
-				self.Entries[i] = rw.rw_obj(self.Entries[i], FtdList, filename)
+				self.DataOffsets = [None]*self.DataCount
+			for i in range(self.DataCount):
+				if rw.is_constructlike:
+					paddingSize = self.DataOffsets[i] - rw.tell()
+				elif rw.is_parselike:
+					self.DataOffsets[i] = rw.tell()
+					paddingSize = 0
+					self.EntryPads[i] = b""
+				self.EntryPads[i] = rw.rw_bytestring(self.EntryPads[i], paddingSize)
+				assert self.EntryPads[i] == b"\x00"*paddingSize
+				assert rw.tell() == self.DataOffsets[i]
+				if self.DataType:
+					self.Entries[i] = rw.rw_obj(self.Entries[i], FtdString)
+				else:
+					self.Entries[i] = rw.rw_obj(self.Entries[i], FtdList, filename)
+
+			paddingSize = 8 - (rw.tell() % 8)
+			if rw.is_parselike:
+				self.Padding = b"\x00"*paddingSize
+			self.Padding = rw.rw_bytestring(self.Padding, paddingSize)
+			assert self.Padding == b"\x00"*paddingSize
+			if rw.is_parselike:
+				self.FileSize = rw.tell()
+			assert rw.tell() == self.FileSize
+
+		failed = False
+		try:
+			rw.assert_eof()
+		except Exception:
+			print("Failed to read file!")
+			remainder = rw._bytestream.peek()
+			print(len(remainder), remainder)
 
 
 class FtdString(Serializable):
@@ -125,7 +140,7 @@ class FtdList(Serializable):
 			if FtdListType(self.EntryType) == FtdListType.DataEntries:
 				print("{}({}) {}".format(" "*indent_level, i, self.Entries[i].stringify()))
 			else:
-				print("{}LIST ENTRY {}:".format(" "*indent_level, i+1))
+				print("{}LIST ENTRY {}:".format(" "*indent_level, i))
 				self.Entries[i].pretty_print(indent_level=indent_level+1)
 
 	def __rw_hook__(self, rw, filename):
@@ -292,6 +307,84 @@ class FtdEntryTypes(Serializable):
 			#return ",  ".join("{}: {}".format(key, self.__dict__[key]) for key in self.__dict__)
 
 
+	class FLDFOOTSTEPCND(Serializable): 
+
+		def __init__(self):
+			self.FieldMajorId	= None
+			self.FieldMinorId	= None
+			self.FootstepType	= None
+			self.RoomId			= None
+			self.RESERVE		= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.FieldMajorId	= rw.rw_uint16(self.FieldMajorId)
+			self.FieldMinorId	= rw.rw_uint16(self.FieldMinorId)
+			self.FootstepType	= rw.rw_uint16(self.FootstepType)
+			self.RoomId			= rw.rw_uint8(self.RoomId)
+
+			self.RESERVE = rw.rw_uint8(self.RESERVE)
+			assert self.RESERVE == 0
+
+		def stringify(self):
+			return "Field Major ID: {}, Field Minor ID: {}, Footstep Type {}, Room ID: {}".format(
+				#self.FieldMajorId, self.FieldMinorId, self.FootstepType, self.RESERVE,
+				self.FieldMajorId, self.FieldMinorId, FootstepTypes(self.FootstepType).name, self.RoomId,
+		)
+
+
+	class FLDPLACENO(Serializable):
+
+		def __init__(self):
+			self.FieldNameIndex = None
+			self.Room1NameIndex = None
+			self.Room2NameIndex = None
+			# I'm assuming lol, it's technically unused because I don't think any fields have > 2 rooms
+			self.Room3NameIndex = None
+
+		def __rw_hook__(self, rw, datasize):
+			self.FieldNameIndex = rw.rw_uint16(self.FieldNameIndex)
+			self.Room1NameIndex = rw.rw_uint16(self.Room1NameIndex)
+			self.Room2NameIndex = rw.rw_uint16(self.Room2NameIndex)
+			self.Room3NameIndex = rw.rw_uint16(self.Room2NameIndex)
+
+		def stringify(self):
+			return "Field Name Index: {}, Room 1 Name Index: {}, Room 2 Name Index: {}, Room 3 Name Index: {}".format(
+				self.FieldNameIndex, self.Room1NameIndex, self.Room2NameIndex, self.Room3NameIndex
+			)
+
+
+	class FLDPLAYERSPEED(Serializable): 
+
+		def __init__(self):
+			self.FieldMajorId		= None
+			self.FieldMinorId		= None
+			self.WalkSpeed			= None
+			self.RunSpeed			= None
+			self.AccelFrames		= None
+			self.DecelFrames		= None
+			self.StaticTurnFrames	= None
+			self.RESERVE			= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.FieldMajorId		= rw.rw_int16(self.FieldMajorId)
+			self.FieldMinorId		= rw.rw_int16(self.FieldMinorId)
+			self.WalkSpeed			= rw.rw_int16(self.WalkSpeed)
+			self.RunSpeed			= rw.rw_int16(self.RunSpeed)
+			self.AccelFrames		= rw.rw_uint8(self.AccelFrames)
+			self.DecelFrames		= rw.rw_uint8(self.DecelFrames)
+			self.StaticTurnFrames	= rw.rw_uint8(self.StaticTurnFrames)
+
+			self.RESERVE = rw.rw_uint8(self.RESERVE)
+			assert self.RESERVE == 0
+
+		def stringify(self):
+			return "Field Major ID: {}, Field Minor ID: {}, Walk Speed: {}, Run Speed: {}, Accel Frames: {}, Decel Frames: {}, Static Turn Frames: {}".format(
+				self.FieldMajorId, self.FieldMinorId,
+				self.WalkSpeed, self.RunSpeed,
+				self.AccelFrames, self.DecelFrames, self.StaticTurnFrames,
+			)
+
+
 class FtdListType(Enum):
 	DataEntries	= 0
 	EmbeddedFtd	= 1
@@ -382,3 +475,25 @@ class FieldTypes(Enum):
 	Overworld	= 0
 	Metaverse	= 1
 	ANY			= 255
+
+
+class FootstepTypes(Enum):
+	Silence			= 0
+	Wood			= 1
+	Stone			= 2
+	# not actually used
+	Grass			= 3
+	Soil			= 4
+	Carpet			= 5
+	Metal			= 6
+	Bare			= 7
+	# not actually used
+	Crawl			= 8
+	Sand			= 9
+	# not actually used
+	Wet				= 10
+	# not actually used
+	Creak			= 11
+	# not actually used
+	WoodAndCreak	= 12
+	Thin_Metal		= 14

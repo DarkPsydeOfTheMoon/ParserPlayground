@@ -15,11 +15,11 @@ def main():
 	table1.read(tablePath1, filename=tableName)
 
 	# change the final entry
-	table1.Entries[-1].Data = b"The Coolest Place"
+	table1.Entries[-1].Data = b"The Coolest Place\x00"
 
-	# add an entry (idk if this can actually be read by the game or if the FTD size is fixed...)
+	# add an entry
 	newEntry = copy.deepcopy(table1.Entries[-1])
-	newEntry.Data = b"An Even Cooler Place!?"
+	newEntry.Data = b"An Even Cooler Place!?\x00"
 	table1.Entries.append(newEntry)
 
 	# save the results
