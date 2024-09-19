@@ -105,8 +105,8 @@ class FtdString(Serializable):
 	def __init__(self):
 		self.Length = None
 		self.Data = None
-		self.UNK = [None]*1
-		self.DUMMY = [None]*2
+		self.UNK = None
+		self.RESERVE = None
 
 	def __rw_hook__(self, rw):
 
@@ -114,13 +114,11 @@ class FtdString(Serializable):
 			self.Length = len(self.Data)
 		self.Length = rw.rw_uint8(self.Length)
 
-		self.UNK[0] = rw.rw_uint8(self.UNK[0])
+		self.UNK = rw.rw_uint8(self.UNK)
+		assert self.UNK == 1
 
-		self.DUMMY[0] = rw.rw_uint8(self.DUMMY[0])
-		assert self.DUMMY[0] == 0
-
-		self.DUMMY[1] = rw.rw_uint8(self.DUMMY[1])
-		assert self.DUMMY[1] == 0
+		self.RESERVE = rw.rw_uint16(self.RESERVE)
+		assert self.RESERVE == 0
 
 		#self.Data = rw.rw_string(self.Data, self.Length, encoding="ascii")
 		self.Data = rw.rw_bytestring(self.Data, self.Length)
@@ -129,14 +127,15 @@ class FtdString(Serializable):
 class FtdList(Serializable):
 
 	def __init__(self):
+		self.RESERVE1 = None
+
 		self.DataSize = None
 		self.EntryCount = None
 		self.EntryType = None
 
-		self.Entries = None
+		self.RESERVE2 = None
 
-		self.UNK = [None]*1
-		self.DUMMY = [None]*1
+		self.Entries = None
 
 	def pretty_print(self, indent_level=0):
 		for i in range(self.EntryCount):
@@ -148,8 +147,8 @@ class FtdList(Serializable):
 
 	def __rw_hook__(self, rw, filename):
 
-		self.DUMMY[0] = rw.rw_uint32(self.DUMMY[0])
-		assert self.DUMMY[0] == 0
+		self.RESERVE1 = rw.rw_uint32(self.RESERVE1)
+		assert self.RESERVE1 == 0
 
 		self.DataSize = rw.rw_uint32(self.DataSize)
 
@@ -159,7 +158,8 @@ class FtdList(Serializable):
 		self.EntryType = rw.rw_uint16(self.EntryType)
 		assert self.EntryType == 0 or self.EntryType == 1
 
-		self.UNK[0] = rw.rw_uint16(self.UNK[0])
+		self.RESERVE2 = rw.rw_uint16(self.RESERVE2)
+		assert self.RESERVE2 == 0
 
 		with rw.relative_origin():
 			if self.EntryCount:
@@ -268,6 +268,93 @@ class FtdEntryTypes(Serializable):
 			super(FtdEntryTypes.cmmPC_PARAM_Name, self).__init__()
 
 
+	class DATENCOUNTPACK(Serializable):
+
+		def __init__(self):
+			self.DngId					= None
+			self.RESERVE1				= None
+			self.AmbushEncounterIds		= None
+			self.NormalEncounters		= None
+			self.NormalPinchEncounters	= None
+			self.Unk1Encounters			= None
+			self.Unk2Encounters			= None
+			self.StrongEncounters		= None
+			self.StrongPinchEncounters	= None
+			self.TreasureEncounters		= None
+			self.ReaperEncounter		= None
+			self.RESERVE2				= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.DngId		= rw.rw_uint8(self.DngId)
+			self.RESERVE1	= rw.rw_uint8s(self.RESERVE1, 7)
+			assert all(elem == 0 for elem in self.RESERVE1)
+
+			self.AmbushEncounterIds		= rw.rw_uint16s(self.AmbushEncounterIds, 8)
+			self.NormalEncounters		= rw.rw_objs(self.NormalEncounters, ENC, 13)
+			self.NormalPinchEncounters	= rw.rw_objs(self.NormalPinchEncounters, ENC, 5)
+			self.Unk1Encounters			= rw.rw_objs(self.Unk1Encounters, ENC, 5)
+			self.Unk2Encounters			= rw.rw_objs(self.Unk2Encounters, ENC, 5)
+			self.StrongEncounters		= rw.rw_objs(self.StrongEncounters, ENC, 5)
+			self.StrongPinchEncounters	= rw.rw_objs(self.StrongPinchEncounters, ENC, 5)
+			self.TreasureEncounters		= rw.rw_objs(self.TreasureEncounters, ENC, 5)
+
+			self.ReaperEncounter		= rw.rw_obj(self.ReaperEncounter, ENC)
+
+			assert sum(enc.Weight for enc in self.NormalEncounters) in {0, 100}
+			assert sum(enc.Weight for enc in self.NormalPinchEncounters) in {0, 100}
+			assert sum(enc.Weight for enc in self.Unk1Encounters) in {0, 100}
+			assert sum(enc.Weight for enc in self.Unk2Encounters) in {0, 100}
+			assert sum(enc.Weight for enc in self.StrongEncounters) in {0, 100}
+			assert sum(enc.Weight for enc in self.StrongPinchEncounters) in {0, 100}
+			assert sum(enc.Weight for enc in self.TreasureEncounters) in {0, 100}
+
+			self.RESERVE2				= rw.rw_uint32(self.RESERVE2)
+			assert self.RESERVE2 == 0
+
+		def stringify(self):
+			lines = list()
+			lines.append(f"DNG ID: {self.DngId}")
+			if any(encId != 0 for encId in self.AmbushEncounterIds):
+				lines.append("    Ambush Encounter IDs: {}".format(", ".join(str(encId) for encId in self.AmbushEncounterIds if encId != 0)))
+			if any(enc.EncounterId != 0 for enc in self.NormalEncounters):
+				lines.append("    Normal Encounters:")
+				for i in range(len(self.NormalEncounters)):
+					if self.NormalEncounters[i].EncounterId != 0:
+						lines.append("      ({}) {}".format(i+1, self.NormalEncounters[i].stringify()))
+			if any(enc.EncounterId != 0 for enc in self.NormalPinchEncounters):
+				lines.append("    Normal Pinch Encounters:")
+				for i in range(len(self.NormalPinchEncounters)):
+					if self.NormalPinchEncounters[i].EncounterId != 0:
+						lines.append("      ({}) {}".format(i+1, self.NormalPinchEncounters[i].stringify()))
+			if any(enc.EncounterId != 0 for enc in self.Unk1Encounters):
+				lines.append("    UNK #1 Encounters:")
+				for i in range(len(self.Unk1Encounters)):
+					if self.Unk1Encounters[i].EncounterId != 0:
+						lines.append("      ({}) {}".format(i+1, self.Unk1Encounters[i].stringify()))
+			if any(enc.EncounterId != 0 for enc in self.Unk2Encounters):
+				lines.append("    UNK #2 Encounters:")
+				for i in range(len(self.Unk2Encounters)):
+					if self.Unk2Encounters[i].EncounterId != 0:
+						lines.append("      ({}) {}".format(i+1, self.Unk2Encounters[i].stringify()))
+			if any(enc.EncounterId != 0 for enc in self.StrongEncounters):
+				lines.append("    Strong Encounters:")
+				for i in range(len(self.StrongEncounters)):
+					if self.StrongEncounters[i].EncounterId != 0:
+						lines.append("      ({}) {}".format(i+1, self.StrongEncounters[i].stringify()))
+			if any(enc.EncounterId != 0 for enc in self.StrongPinchEncounters):
+				lines.append("    Strong Pinch Encounters:")
+				for i in range(len(self.StrongPinchEncounters)):
+					if self.StrongPinchEncounters[i].EncounterId != 0:
+						lines.append("      ({}) {}".format(i+1, self.StrongPinchEncounters[i].stringify()))
+			if any(enc.EncounterId != 0 for enc in self.TreasureEncounters):
+				lines.append("    Treasure Encounters:")
+				for i in range(len(self.TreasureEncounters)):
+					if self.TreasureEncounters[i].EncounterId != 0:
+						lines.append("      ({}) {}".format(i+1, self.TreasureEncounters[i].stringify()))
+			lines.append("    Reaper Encounter: {}".format(self.ReaperEncounter.stringify()))
+			return "\n".join(lines)
+
+
 	class FLDACTMOVELEN(Serializable):
 
 		def __init__(self):
@@ -278,6 +365,44 @@ class FtdEntryTypes(Serializable):
 
 		def stringify(self):
 			return f"Move Length: {self.MoveLength}"
+
+
+	class FLDADDACTANIM(Serializable):
+
+		def __init__(self):
+			self.FieldObjMajorId	= None
+			self.FieldObjMinorId	= None
+			self.FieldAnimGapId		= None
+			self.UNK1				= None
+			self.UNK2				= None
+			self.UNK3				= None
+			self.UNK4				= None
+			self.UNK5				= None
+			self.UNK6				= None
+			self.UNK7				= None
+			self.UNK8				= None
+			self.UNK9				= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.FieldObjMajorId	= rw.rw_int16(self.FieldObjMajorId)
+			self.FieldObjMinorId	= rw.rw_int16(self.FieldObjMinorId)
+			self.FieldAnimGapId		= rw.rw_uint8(self.FieldAnimGapId)
+			self.UNK1				= rw.rw_uint8(self.UNK1)
+			self.UNK2				= rw.rw_int16(self.UNK2)
+			self.UNK3				= rw.rw_int16(self.UNK3)
+			self.UNK4				= rw.rw_int16(self.UNK4)
+			self.UNK5				= rw.rw_int32(self.UNK5)
+			self.UNK6				= rw.rw_int16(self.UNK6)
+			self.UNK7				= rw.rw_int16(self.UNK7)
+			self.UNK8				= rw.rw_int32(self.UNK8)
+			self.UNK9				= rw.rw_int16(self.UNK9)
+
+		def stringify(self):
+			return "FieldObj Major ID: {}, FieldObj Minor ID: {}, FieldAnim GAP ID: {}, UNK 1: {}, UNK 2: {}, UNK 3: {}, UNK 4: {}, UNK 5: {}, UNK 6: {}, UNK 7: {}, UNK 8: {}, UNK 9: {}".format(
+				self.FieldObjMajorId, self.FieldObjMinorId,
+				self.FieldAnimGapId, self.UNK1, self.UNK2, self.UNK3, self.UNK4,
+				self.UNK5, self.UNK6, self.UNK7, self.UNK8, self.UNK9,
+			)
 
 
 	class FLDBGMCND(Serializable):
@@ -328,7 +453,29 @@ class FtdEntryTypes(Serializable):
 			#return ",  ".join("{}: {}".format(key, self.__dict__[key]) for key in self.__dict__)
 
 
-	class FLDFOOTSTEPCND(Serializable): 
+	class FLDDNGPACK(Serializable):
+
+		def __init__(self):
+			self.EncountPackEntry	= None
+			self.ObjFlagEntry		= None
+			self.TboxRndEntry		= None
+			self.RESERVE			= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.EncountPackEntry	= rw.rw_uint16(self.EncountPackEntry)
+			self.ObjFlagEntry		= rw.rw_uint16(self.ObjFlagEntry)
+			self.TboxRndEntry		= rw.rw_uint16(self.TboxRndEntry)
+
+			self.RESERVE = rw.rw_bytestring(self.RESERVE, 10)
+			assert self.RESERVE == b"\0"*10
+
+		def stringify(self):
+			return "Encounter Pack Entry: {}, Object Flag Entry: {}, Treasurebox Entry: {}".format(
+				self.EncountPackEntry, self.ObjFlagEntry, self.TboxRndEntry
+			)
+
+
+	class FLDFOOTSTEPCND(Serializable):
 
 		def __init__(self):
 			self.FieldMajorId	= None
@@ -359,7 +506,6 @@ class FtdEntryTypes(Serializable):
 			self.FieldNameIndex = None
 			self.Room1NameIndex = None
 			self.Room2NameIndex = None
-			# I'm assuming lol, it's technically unused because I don't think any fields have > 2 rooms
 			self.Room3NameIndex = None
 
 		def __rw_hook__(self, rw, datasize):
@@ -374,7 +520,7 @@ class FtdEntryTypes(Serializable):
 			)
 
 
-	class FLDPLAYERSPEED(Serializable): 
+	class FLDPLAYERSPEED(Serializable):
 
 		def __init__(self):
 			self.FieldMajorId		= None
@@ -404,6 +550,58 @@ class FtdEntryTypes(Serializable):
 				self.WalkSpeed, self.RunSpeed,
 				self.AccelFrames, self.DecelFrames, self.StaticTurnFrames,
 			)
+
+
+	class FLDSYMMODELNO(Serializable):
+
+		def __init__(self):
+			self.ShadowOffset = None
+
+
+		def __rw_hook__(self, rw, datasize):
+			self.ShadowOffset = rw.rw_uint16(self.ShadowOffset)
+
+		def stringify(self):
+			return "Shadow Offset: {}".format(
+				self.ShadowOffset,
+			)
+
+
+	class FLDSYMMODELSCL(Serializable):
+
+		def __init__(self):
+			self.ShadowID	= None
+			self.ModelScale	= None
+
+
+		def __rw_hook__(self, rw, datasize):
+			self.ShadowID	= rw.rw_uint16(self.ShadowID)
+			self.ModelScale	= rw.rw_uint16(self.ModelScale)
+
+		def stringify(self):
+			return "Shadow ID: {}, Model Scale: {}".format(
+				self.ShadowID, self.ModelScale,
+			)
+
+
+class ENC(Serializable):
+
+	def __init__(self):
+		self.EncounterId	= None
+		self.Weight			= None
+		self.RESERVE		= None
+
+	def __rw_hook__(self, rw):
+		self.EncounterId	= rw.rw_uint16(self.EncounterId)
+		self.Weight			= rw.rw_uint8(self.Weight)
+
+		self.RESERVE = rw.rw_uint8(self.RESERVE)
+		assert self.RESERVE == 0
+
+	def stringify(self):
+		return "ID = {} ({}%)".format(
+			self.EncounterId, self.Weight
+		)
 
 
 class FtdListType(Enum):
