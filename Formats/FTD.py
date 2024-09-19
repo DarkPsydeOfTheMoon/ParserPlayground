@@ -405,6 +405,24 @@ class FtdEntryTypes(Serializable):
 			)
 
 
+	class FLDBGLAYOUTSE(Serializable):
+
+		def __init__(self):
+			self.FieldMajorId	= None
+			self.FieldMinorId	= None
+			self.UNK			= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.FieldMajorId	= rw.rw_int16(self.FieldMajorId)
+			self.FieldMinorId	= rw.rw_int16(self.FieldMinorId)
+			self.UNK			= rw.rw_int32(self.UNK)
+
+		def stringify(self):
+			return "Field Major ID: {}, Field Minor ID: {}, ???: {}".format(
+				self.FieldMajorId, self.FieldMinorId, self.UNK
+			)
+
+
 	class FLDBGMCND(Serializable):
 
 		def __init__(self):
@@ -473,6 +491,32 @@ class FtdEntryTypes(Serializable):
 			return "Encounter Pack Entry: {}, Object Flag Entry: {}, Treasurebox Entry: {}".format(
 				self.EncountPackEntry, self.ObjFlagEntry, self.TboxRndEntry
 			)
+
+
+	class FLDDNGPLACENO(Serializable):
+
+		def __init__(self):
+			self.MajorNameIndex	= None
+			self.MinorNameIndex	= None
+			self.RESERVE		= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.MajorNameIndex	= rw.rw_uint16(self.MajorNameIndex)
+			self.MinorNameIndex	= rw.rw_uint16(self.MinorNameIndex)
+
+			self.RESERVE = rw.rw_uint32(self.RESERVE)
+			assert self.RESERVE == 0
+
+		def stringify(self):
+			return "Major Name Index: {}, Minor Name Index: {}".format(
+				self.MajorNameIndex, self.MinorNameIndex
+			)
+
+
+	class FLDATDNGPLACENO(FLDDNGPLACENO):
+
+		def __init__(self):
+			super(FtdEntryTypes.FLDATDNGPLACENO, self).__init__()
 
 
 	class FLDFOOTSTEPCND(Serializable):
