@@ -1,3 +1,4 @@
+from .BINPAK import AtlusArchive
 from .BUSTUP_PARAM import BustupParam
 from .FNTMAP import FntMap
 from .FNT import Font
