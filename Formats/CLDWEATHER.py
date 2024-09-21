@@ -44,6 +44,7 @@ class CalendarWeather(Serializable):
 				))
 			print()
 
+
 class DailyWeather(Serializable):
 
 	def __init__(self):
@@ -62,4 +63,3 @@ class DailyWeather(Serializable):
 class UnkMode(Enum):
 	UnkMode0	= 0
 	UnkMode1	= 1
-
