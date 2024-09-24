@@ -54,7 +54,6 @@ class AtlusArchive(Serializable):
 			print(len(remainder), remainder)
 
 
-
 class FileEntry(Serializable):
 
 	def __init__(self):
@@ -64,7 +63,6 @@ class FileEntry(Serializable):
 
 	def __rw_hook__(self, rw, namelength):
 		self.Name = rw.rw_string(self.Name, namelength, encoding="ascii")
-		#print(self.Name)
 		self.Size = rw.rw_uint32(self.Size)
 		self.Data = rw.rw_bytestring(self.Data, self.Size)
 		assert len(self.Data) == self.Size

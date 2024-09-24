@@ -25,8 +25,14 @@ def main():
 	fldAtDngNoTable = Table()
 	fldAtDngNoTable.read(fldAtDngNoTablePath, filename=fldAtDngNoTableName)
 
+	# ...also FLDTESTDNGPLACENO, i guess
+	fldTestDngNoTablePath = "Scripts/Assets/VANILLA_FLDTESTDNGPLACENO.FTD"
+	fldTestDngNoTableName = "FLDTESTDNGPLACENO"
+	fldTestDngNoTable = Table()
+	fldTestDngNoTable.read(fldTestDngNoTablePath, filename=fldTestDngNoTableName)
+
 	# combine!
-	for noTable in [fldAtDngNoTable, fldDngNoTable]:
+	for noTable in [fldAtDngNoTable, fldDngNoTable, fldTestDngNoTable]:
 		for i in range(noTable.DataCount):
 			print("Dungeon {}:".format(i))
 			for j in range(noTable.Entries[i].EntryCount):

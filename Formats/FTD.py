@@ -287,11 +287,11 @@ class FtdEntryTypes(Serializable):
 			self.Prerequisites	= None
 
 		def __rw_hook__(self, rw, datasize):
-			self.ConfidantId = rw.rw_uint16(self.ConfidantId)
-			self.EventType = rw.rw_uint8(self.EventType)
-			self.PriorRank = rw.rw_uint8(self.PriorRank)
-			self.MajorId = rw.rw_uint16(self.MajorId)
-			self.MinorId = rw.rw_uint16(self.MinorId)
+			self.ConfidantId	= rw.rw_uint16(self.ConfidantId)
+			self.EventType		= rw.rw_uint8(self.EventType)
+			self.PriorRank		= rw.rw_uint8(self.PriorRank)
+			self.MajorId		= rw.rw_uint16(self.MajorId)
+			self.MinorId		= rw.rw_uint16(self.MinorId)
 
 			self.RESERVE = rw.rw_uint32(self.RESERVE)
 			assert self.RESERVE == 0
@@ -304,16 +304,180 @@ class FtdEntryTypes(Serializable):
 			)
 
 
+	class cmmFormat(Serializable):
+
+		def __init__(self):
+			self.ConfidantListIndex		= None
+			self.UNK1					= None
+			self.ConfidantId			= None
+			self.UNK2					= None
+			self.RESERVE2				= None
+			self.RESERVE3				= None
+			self.PointsForRank			= None
+			self.RESERVE4				= None
+			self.ConfidantTableIndex	= None
+			self.Padding				= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.ConfidantListIndex		= rw.rw_int32(self.ConfidantListIndex)
+			self.UNK1					= rw.rw_int32(self.UNK1)
+			self.ConfidantId			= rw.rw_uint8(self.ConfidantId)
+			self.UNK2					= rw.rw_uint8(self.UNK2)
+
+			self.RESERVE2 = rw.rw_uint16(self.RESERVE2)
+			assert self.RESERVE2 == 0
+			self.RESERVE3 = rw.rw_int32(self.RESERVE3)
+			assert self.RESERVE3 == 0
+
+			self.PointsForRank			= rw.rw_uint16s(self.PointsForRank, 10)
+
+			self.RESERVE4 = rw.rw_int32(self.RESERVE4)
+			assert self.RESERVE4 == 0
+			#print(self.RESERVE1, self.RESERVE2, self.RESERVE3, self.RESERVE4)
+
+			self.ConfidantTableIndex	= rw.rw_int32(self.ConfidantTableIndex)
+
+			self.Padding = rw.rw_bytestring(self.Padding, 144)
+			# there's a single \x12 in Strength's padding... why....
+			#assert self.RESERVE == b"\0"*144
+
+		def stringify(self):
+			return "Confidant List Index: {}, UNK1: {}, Confidant ID: {}, UNK2: {}, Confidant Table Index: {}, Points For Rank: {}".format(
+				self.ConfidantListIndex, self.UNK1, self.ConfidantId, self.UNK2, self.ConfidantTableIndex,
+				", ".join(f"{i+1}={p}" for i, p in enumerate(self.PointsForRank)),
+			)
+
+
 	class cmmMemberName(JustAString):
 
 		def __init__(self):
 			super(FtdEntryTypes.cmmMemberName, self).__init__()
 
 
+	class cmmName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmName, self).__init__()
+
+
 	class cmmPC_PARAM_Name(JustAString):
 
 		def __init__(self):
 			super(FtdEntryTypes.cmmPC_PARAM_Name, self).__init__()
+
+
+	class cmpArbeitName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpArbeitName, self).__init__()
+
+
+	class cmpCalName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpCalName, self).__init__()
+
+
+	class cmpConfigHelp(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigHelp, self).__init__()
+
+
+	class cmpConfigHelpNx(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigHelpNx, self).__init__()
+
+
+	class cmpConfigHelpPs5(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigHelpPs5, self).__init__()
+
+
+	class cmpConfigHelpSteam(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigHelpSteam, self).__init__()
+
+
+	class cmpConfigHelpXbox(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigHelpXbox, self).__init__()
+
+
+	class cmpConfigItem(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigItem, self).__init__()
+
+
+	class cmpConfigItemNx(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigItemNx, self).__init__()
+
+
+	class cmpConfigItemPs5(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigItemPs5, self).__init__()
+
+
+	class cmpConfigItemSteam(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigItemSteam, self).__init__()
+
+
+	class cmpConfigItemXbox(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpConfigItemXbox, self).__init__()
+
+
+	class cmpDifficultName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpDifficultName, self).__init__()
+
+
+	class cmpMoneyPanelString(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpMoneyPanelString, self).__init__()
+
+
+	class cmpPersonaParam(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpPersonaParam, self).__init__()
+
+
+	class cmpQuestName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpQuestName, self).__init__()
+
+
+	class cmpQuestTargetName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpQuestTargetName, self).__init__()
+
+
+	class cmpSystemHelp(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpSystemHelp, self).__init__()
+
+
+	class cmpSystemMenu(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmpSystemMenu, self).__init__()
 
 
 	class DATENCOUNTPACK(Serializable):
@@ -590,6 +754,12 @@ class FtdEntryTypes(Serializable):
 			super(FtdEntryTypes.FLDATDNGPLACENO, self).__init__()
 
 
+	class FLDTESTDNGPLACENO(FLDDNGPLACENO):
+
+		def __init__(self):
+			super(FtdEntryTypes.FLDTESTDNGPLACENO, self).__init__()
+
+
 	class FLDDOORANIM(Serializable):
 
 		def __init__(self):
@@ -734,6 +904,26 @@ class FtdEntryTypes(Serializable):
 			)
 
 
+	class FLDOBJFLAG(Serializable):
+
+		def __init__(self):
+			self.FldObj = None
+
+		def __rw_hook__(self, rw, datasize):
+			self.FldObj = rw.rw_objs(self.FldObj, FieldTreasureObject, 10)
+
+		def stringify(self):
+			lines = list()
+			for i in range(10):
+				if any(ind != 0 for ind in self.FldObj[i].TboxIndices):
+					lines.append("     ({}) {}".format(i, self.FldObj[i].stringify()))
+			if lines:
+				lines.insert(0, "Field Treasure Objects:")
+			else:
+				lines.append("(nothing)")
+			return "\n".join(lines)
+
+
 	class FLDPLACENO(Serializable):
 
 		def __init__(self):
@@ -784,6 +974,12 @@ class FtdEntryTypes(Serializable):
 				self.WalkSpeed, self.RunSpeed,
 				self.AccelFrames, self.DecelFrames, self.StaticTurnFrames,
 			)
+
+
+	class FLDSAVEDATAPLACE(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.FLDSAVEDATAPLACE, self).__init__()
 
 
 	class FLDSYMMODELNO(Serializable):
@@ -915,13 +1111,29 @@ class FieldMapEntry(Serializable):
 		self.UNK1			= rw.rw_uint16(self.UNK1)
 		assert self.UNK1 == 2
 		self.UNK2			= rw.rw_uint16(self.UNK2)
-		#print(self.UNK1, self.UNK2)
 
 	def stringify(self):
 		return "MAP ENTRY: {} (F{:03d}_{:03d}_{}, ENTRANCE {}) -- PROC: {}, VIA: {}, UNK: {}".format(
 			self.Name.replace(b"\0", b""), self.FieldMajorId, self.FieldMinorId,
 			self.RoomId, self.EntranceId,
 			self.HoverProcInd, TravelTypes(self.TravelType).name, self.UNK2,
+		)
+
+
+class FieldTreasureObject(Serializable):
+
+	def __init__(self):
+		self.BitFlag		= None
+		self.TboxIndices	= None
+
+	def __rw_hook__(self, rw):
+		self.BitFlag		= rw.rw_uint32(self.BitFlag)
+		self.TboxIndices	= rw.rw_uint16s(self.TboxIndices, 6)
+
+	def stringify(self):
+		return "BitFlag: {} + {}, Treasurebox Indices: {}".format(
+			hex(self.BitFlag & 0xF0000000), self.BitFlag & 0x0FFFFFFF,
+			", ".join(str(ind) for ind in self.TboxIndices if ind != 0),
 		)
 
 

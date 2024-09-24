@@ -14,8 +14,9 @@ def main():
 
 	readFail = 0
 	writeFail = 0
+	generic = 0
 	totalTables = 0
-	patt = re.compile(r"\.[CcEeFfTt][Tt][Dd]$", re.IGNORECASE)
+	patt = re.compile(r"\.[CcEeFfMmTt][Tt][Dd]$", re.IGNORECASE)
 	for tablePath in sorted(path for path in Path(args.table_directory).rglob("*") if patt.search(str(path))):
 		tableName = tablePath.stem
 		table = Table()
@@ -24,6 +25,12 @@ def main():
 		except Exception:
 			print(f"READ FAIL: {tableName}")
 			readFail += 1
+		if not table.DataType:
+			if not table.Entries[0].EntryType:
+				#print(isinstance(table.Entries[0].Entries[0], Formats.FTD.FtdEntryTypes.Generic))
+				if table.Entries[0].Entries is not None and type(table.Entries[0].Entries[0]).__name__ == "Generic":
+					print(tableName)
+					generic += 1
 		try:
 			table.update_offsets(filename=tableName)
 		except Exception:
@@ -34,6 +41,7 @@ def main():
 	print()
 	print("TOTAL READ FAILS: {:.2%} ({} / {})".format(readFail/totalTables, readFail, totalTables))
 	print("TOTAL WRITE FAILS: {:.2%} ({} / {})".format(writeFail/totalTables, writeFail, totalTables))
+	print("TOTAL UNIMPLEMENTED: {:.2%} ({} / {})".format(generic/totalTables, generic, totalTables))
 
 
 if __name__ == "__main__":
