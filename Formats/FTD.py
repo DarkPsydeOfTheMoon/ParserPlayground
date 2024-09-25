@@ -662,20 +662,20 @@ class FtdEntryTypes(Serializable):
 	class FLDBGMCND(Serializable):
 
 		def __init__(self):
-			self.FieldMajorId	= None
-			self.FieldMinorId	= None
-			self.MinMonth		= None
-			self.MinDay			= None
-			self.MaxMonth		= None
-			self.MaxDay			= None
-			self.UnknownType	= None
-			self.WeatherType	= None
-			self.FieldType		= None
-			self.RESERVE1		= None
-			self.RESERVE2		= None
-			self.BgmCueId		= None
-			self.BitFlagSection	= None
-			self.BitFlagId		= None
+			self.FieldMajorId	= -1
+			self.FieldMinorId	= -1
+			self.MinMonth		= 4
+			self.MinDay			= 1
+			self.MaxMonth		= 3
+			self.MaxDay			= 31
+			self.UnknownType	= 255
+			self.WeatherType	= 255
+			self.FieldType		= 255
+			self.RESERVE1		= 255
+			self.RESERVE2		= 0
+			self.BgmCueId		= 0
+			self.BitFlagSection	= 0
+			self.BitFlagId		= 0
 
 		def __rw_hook__(self, rw, datasize):
 			self.FieldMajorId	= rw.rw_int16(self.FieldMajorId)

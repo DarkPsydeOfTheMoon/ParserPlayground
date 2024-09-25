@@ -7,7 +7,6 @@ def main():
 	Load up a FLDPLACENAME table, modify an entry, and add an entry.
 	"""
 
-
 	tablePath1 = "Scripts/Assets/VANILLA_FLDPLACENAME.FTD"
 	tableName = "FLDPLACENAME"
 

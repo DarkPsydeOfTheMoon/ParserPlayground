@@ -25,23 +25,12 @@ def main():
 
 	for i in range(cmmFormatTable.DataCount):
 		for j in range(cmmFormatTable.Entries[i].EntryCount):
-			#print(i, cmmNameTable.Entries[cmmFormatTable.Entries[i].Entries[j].ConfidantTableIndex])
 			nameTableInd = cmmFormatTable.Entries[i].Entries[j].ConfidantTableIndex
 			personName = cmmNameTable1.Entries[0].Entries[nameTableInd].stringify().decode("utf-8")
 			menuName =  cmmNameTable2.Entries[0].Entries[nameTableInd].stringify().decode("utf-8")
 			print("{}: {} ({})".format(j, menuName, personName))
 			print("  {}".format(cmmFormatTable.Entries[i].Entries[j].stringify()))
 			print()
-		"""for j in range(fldNoTable2.Entries[i].EntryCount):
-			fieldName = fldNameTable2.Entries[fldNoTable2.Entries[i].Entries[j].FieldNameIndex].Data
-			room1Name = fldNameTable2.Entries[fldNoTable2.Entries[i].Entries[j].Room1NameIndex].Data
-			room2Name = fldNameTable2.Entries[fldNoTable2.Entries[i].Entries[j].Room2NameIndex].Data
-			room3Name = fldNameTable2.Entries[fldNoTable2.Entries[i].Entries[j].Room3NameIndex].Data
-			print(f"F{i:03d}_{j:03d}: {fieldName}")
-			print(f"  F{i:03d}_{j:03d}_0: {room1Name}")
-			print(f"  F{i:03d}_{j:03d}_1: {room2Name}")
-			print(f"  F{i:03d}_{j:03d}_2: {room3Name}")
-			print()"""
 
 
 if __name__ == "__main__":

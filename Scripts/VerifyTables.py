@@ -27,9 +27,7 @@ def main():
 			readFail += 1
 		if not table.DataType:
 			if not table.Entries[0].EntryType:
-				#print(isinstance(table.Entries[0].Entries[0], Formats.FTD.FtdEntryTypes.Generic))
 				if table.Entries[0].Entries is not None and type(table.Entries[0].Entries[0]).__name__ == "Generic":
-					print(tableName)
 					generic += 1
 		try:
 			table.update_offsets(filename=tableName)
