@@ -855,6 +855,32 @@ class FtdEntryTypes(Serializable):
 			)
 
 
+	class FLDHIDEOUTPOS(Serializable):
+
+		def __init__(self):
+			self.BitFlag		= None
+			self.FieldMajorId	= None
+			self.FieldMinorId	= None
+			self.RoomId			= None
+			# at least we think that's what this is... regardless,
+			# it's what's ref'd by the flow function FLD_GET_POS_INDEX
+			self.EntranceId		= None
+
+		def __rw_hook__(self, rw, datasize):
+			self.BitFlag		= rw.rw_uint32(self.BitFlag)
+			self.FieldMajorId	= rw.rw_uint8(self.FieldMajorId)
+			self.FieldMinorId	= rw.rw_uint8(self.FieldMinorId)
+			self.RoomId			= rw.rw_uint8(self.RoomId)
+			self.EntranceId		= rw.rw_uint8(self.EntranceId)
+
+		def stringify(self):
+			return "BitFlag: {} + {}, Field Major ID: {}, Field Minor ID: {}, Room ID: {}, Entrance ID: {}".format(
+				hex(self.BitFlag & 0xF0000000), self.BitFlag & 0x0FFFFFFF,
+				self.FieldMajorId, self.FieldMinorId, self.RoomId,
+				self.EntranceId
+			)
+
+
 	class FLDLMAPFARE(Serializable):
 
 		def __init__(self):
