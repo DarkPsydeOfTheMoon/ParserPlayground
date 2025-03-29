@@ -275,6 +275,24 @@ class FtdEntryTypes(Serializable):
 			super(FtdEntryTypes.chatTitleName, self).__init__()
 
 
+	class cmmArcanaSPHelp(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmArcanaSPHelp, self).__init__()
+
+
+	class cmmAreaName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmAreaName, self).__init__()
+
+
+	class cmmClubName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmClubName, self).__init__()
+
+
 	class cmmEventNo(Serializable):
 
 		def __init__(self):
@@ -302,6 +320,12 @@ class FtdEntryTypes(Serializable):
 			return "Confidant ID: {}, Event Type: {}, Rank: {}, Event Major ID: {}, Event Minor ID: {}, Conditions: {}".format(
 				self.ConfidantId, EventTypes(self.EventType).name, self.PriorRank, self.MajorId, self.MinorId, EventConditions(self.Prerequisites).name
 			)
+
+
+	class cmmFixString(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmFixString, self).__init__()
 
 
 	class cmmFormat(Serializable):
@@ -348,6 +372,36 @@ class FtdEntryTypes(Serializable):
 			)
 
 
+	class cmmFunctionName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmFunctionName, self).__init__()
+
+
+	class cmmFunctionTable(Serializable):
+
+		def __init__(self):
+			self.Ranks = list()
+
+		def __rw_hook__(self, rw, datasize):
+			self.Ranks = rw.rw_objs(self.Ranks, cmmFunction, 10)
+
+		def stringify(self):
+			return "\n" + ("\n".join("    Rank {}: {}".format(i+1, self.Ranks[i].stringify()) for i in range(len(self.Ranks))))
+
+
+	class cmmMailOrder_Name(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmMailOrder_Name, self).__init__()
+
+
+	class cmmMailOrder_Text(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmMailOrder_Text, self).__init__()
+
+
 	class cmmMemberName(JustAString):
 
 		def __init__(self):
@@ -360,10 +414,55 @@ class FtdEntryTypes(Serializable):
 			super(FtdEntryTypes.cmmName, self).__init__()
 
 
+	class cmmName_EXTRA(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmName_EXTRA, self).__init__()
+
+
+	class cmmNetReportTable(Serializable):
+
+		def __init__(self):
+			self.Type  = None
+			self.Name = None
+
+		def __rw_hook__(self, rw, datasize):
+			self.Type = rw.rw_uint32(self.Type)
+			self.Name = rw.rw_bytestring(self.Name, 48)
+
+		def stringify(self):
+			return "Type: {}, Name: {}".format(self.Type, self.Name)
+
+
+	class cmmPC_PARAM_Help(Serializable):
+
+		def __init__(self):
+			self.LevelNames = list()
+
+		def __rw_hook__(self, rw, datasize):
+			for i in range(5):
+				if rw.is_constructlike:
+					self.LevelNames.append(None)
+				self.LevelNames[i] = rw.rw_string(self.LevelNames[i], 20, encoding="ascii")
+
+		def stringify(self):
+			return "Rank Names:\n{}".format(
+				"\n".join("    ({}) {}".format(
+					i+1, self.LevelNames[i].replace("\0", "")
+				) for i in range(len(self.LevelNames)))
+			)
+
+
 	class cmmPC_PARAM_Name(JustAString):
 
 		def __init__(self):
 			super(FtdEntryTypes.cmmPC_PARAM_Name, self).__init__()
+
+
+	class cmmPhantomThiefName(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.cmmPhantomThiefName, self).__init__()
 
 
 	class cmpArbeitName(JustAString):
@@ -829,8 +928,8 @@ class FtdEntryTypes(Serializable):
 			assert self.RESERVE == 0
 
 		def stringify(self):
-			return "Field Major ID: {}, Field Minor ID: {}, Footstep Type {}, Room ID: {}".format(
-				self.FieldMajorId, self.FieldMinorId, FootstepTypes(self.FootstepType).name, self.RoomId,
+			return "Field Major ID: {}, Field Minor ID: {}, Room ID {}, Footstep Type: {}".format(
+				self.FieldMajorId, self.FieldMinorId, self.RoomId, FootstepTypes(self.FootstepType).name,
 			)
 
 
@@ -1002,6 +1101,36 @@ class FtdEntryTypes(Serializable):
 			)
 
 
+	class FLDPTYTALKCAR(Serializable):
+
+		def __init__(self):
+			self.Unk1 = None
+			self.Unk2 = None
+			self.SupportMsgIndex = None
+			self.ReplyPcIds = [None, None, None]
+			self.ReplyPcMsgIds = [None, None, None]
+
+		def __rw_hook__(self, rw, datasize):
+			self.Unk1 = rw.rw_uint8(self.Unk1)
+			self.Unk2 = rw.rw_uint8(self.Unk2)
+			self.SupportMsgIndex = rw.rw_uint16(self.SupportMsgIndex)
+			for i in range(3):
+				self.ReplyPcIds[i] = rw.rw_uint16(self.ReplyPcIds[i])
+				self.ReplyPcMsgIds[i] = rw.rw_uint16(self.ReplyPcMsgIds[i])
+
+		def stringify(self):
+			lines = list()
+			if self.SupportMsgIndex == 65535:
+				lines.append("Unk: {}, {}; Blank".format(self.Unk1, self.Unk2))
+			else:
+				lines.append("Unk: {}, {}; Message Index: {} (.msg line #{})".format(self.Unk1, self.Unk2, self.SupportMsgIndex, (self.SupportMsgIndex*3)+1))
+			for i in range(3):
+				if self.ReplyPcIds[i] != 0:
+					factor = self.ReplyPcMsgIds[i] // 100
+					lines.append("\tReply #{}: D_CAR__PC{:02d}_mes{}".format(i+1, self.ReplyPcIds[i], 500+self.ReplyPcMsgIds[i]))
+			return "\n".join(lines)
+
+
 	class FLDSAVEDATAPLACE(JustAString):
 
 		def __init__(self):
@@ -1160,6 +1289,29 @@ class FieldTreasureObject(Serializable):
 		return "BitFlag: {} + {}, Treasurebox Indices: {}".format(
 			hex(self.BitFlag & 0xF0000000), self.BitFlag & 0x0FFFFFFF,
 			", ".join(str(ind) for ind in self.TboxIndices if ind != 0),
+		)
+
+
+class cmmFunction(Serializable):
+
+	def __init__(self):
+		self.FunctionType = None
+		self.Rank         = None
+		self.FunctionId   = None
+		self.UNK          = None
+		self.BitFlag      = None
+
+	def __rw_hook__(self, rw):
+		self.FunctionType = rw.rw_uint16(self.FunctionType)
+		self.Rank         = rw.rw_uint16(self.Rank)
+		self.FunctionId   = rw.rw_uint16(self.FunctionId)
+		self.UNK          = rw.rw_uint16(self.UNK)
+		self.BitFlag      = rw.rw_uint32(self.BitFlag)
+
+	def stringify(self):
+		return "Type: {}, Rank: {}, ID: {}, UNK: {}, BitFlag: {} + {}".format(
+			self.FunctionType, self.Rank, self.FunctionId, self.UNK,
+			hex(self.BitFlag & 0xF0000000), self.BitFlag & 0x0FFFFFFF,
 		)
 
 
