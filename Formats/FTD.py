@@ -101,7 +101,10 @@ class Table(Serializable):
 				if self.DataType:
 					self.Entries[i] = rw.rw_obj(self.Entries[i], FtdString)
 				else:
-					self.Entries[i] = rw.rw_obj(self.Entries[i], FtdList, filename)
+					if f"{filename}_{i}" in FtdEntryTypes.__dict__:
+						self.Entries[i] = rw.rw_obj(self.Entries[i], FtdList, f"{filename}_{i}")
+					else:
+						self.Entries[i] = rw.rw_obj(self.Entries[i], FtdList, filename)
 
 			# some tables pad when rw.tell % 8 == 0... others don't. cool. cool cool cool.
 			paddingSize = (8 - (rw.tell() % 8)) if (rw.tell() % 8) else 0
@@ -255,6 +258,47 @@ class FtdEntryTypes(Serializable):
 
 		def stringify(self):
 			return self.Data.replace(b"\0", b"")
+
+
+	class OBL_0(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.OBL_0, self).__init__()
+
+
+	class OBL_1(Serializable):
+
+		def __init__(self):
+			self.ObjectID = None
+			self.UnkEnum = None
+
+			self.UNUSED = None
+
+			self.BitFlagSection = None
+			self.BitFlagId      = None
+
+			self.Bitfield = None
+
+		def __rw_hook__(self, rw, datasize):
+			self.ObjectID = rw.rw_uint16(self.ObjectID)
+			self.UnkEnum = rw.rw_uint8(self.UnkEnum)
+
+			self.UNUSED = rw.rw_uint8(self.UNUSED)
+			assert self.UNUSED == 0
+
+			self.BitFlagSection	= rw.rw_uint16(self.BitFlagSection)
+			self.BitFlagId		= rw.rw_uint16(self.BitFlagId)
+
+			self.Bitfield = rw.rw_uint32(self.Bitfield)
+
+		def stringify(self):
+			return "Object ID: {}, UnkEnum: {}, Bitflag: {} + {}, Bitfield: {}".format(self.ObjectID, self.UnkEnum, hex(self.BitFlagSection << 16), self.BitFlagId, bin(self.Bitfield))
+
+
+	class POL_0(JustAString):
+
+		def __init__(self):
+			super(FtdEntryTypes.POL_0, self).__init__()
 
 
 	class chatDataTable(Serializable):
@@ -1072,14 +1116,14 @@ class FtdEntryTypes(Serializable):
 	class FLDPLAYERSPEED(Serializable):
 
 		def __init__(self):
-			self.FieldMajorId		= None
-			self.FieldMinorId		= None
-			self.WalkSpeed			= None
-			self.RunSpeed			= None
-			self.AccelFrames		= None
-			self.DecelFrames		= None
-			self.StaticTurnFrames	= None
-			self.RESERVE			= None
+			self.FieldMajorId		= 0
+			self.FieldMinorId		= 0
+			self.WalkSpeed			= 0
+			self.RunSpeed			= 0
+			self.AccelFrames		= 0
+			self.DecelFrames		= 0
+			self.StaticTurnFrames	= 0
+			self.RESERVE			= 0
 
 		def __rw_hook__(self, rw, datasize):
 			self.FieldMajorId		= rw.rw_int16(self.FieldMajorId)
