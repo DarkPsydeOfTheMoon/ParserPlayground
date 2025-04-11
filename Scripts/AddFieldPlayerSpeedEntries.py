@@ -16,7 +16,7 @@ def main():
 	# add an entry (at the end of the table)
 	newEntry1 = FtdEntryTypes.FLDPLAYERSPEED()
 	newEntry1.FieldMajorId = 9
-	newEntry1.FieldMinorId = 3
+	newEntry1.FieldMinorId = 2
 	newEntry1.WalkSpeed = 50
 	newEntry1.RunSpeed = 100
 	newEntry1.AccelFrames = 4
