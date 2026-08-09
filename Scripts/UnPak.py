@@ -20,8 +20,9 @@ def main():
 	for fileEntry in acv.Entries:
 		fileName = fileEntry.Name.strip("\0")
 		filePath = os.path.join(outputDir, fileName)
-		with open(filePath, "wb") as f:
-			f.write(fileEntry.Data)
+		if not os.path.isdir(filePath):
+			with open(filePath, "wb") as f:
+				f.write(fileEntry.Data)
 
 
 if __name__ == "__main__":

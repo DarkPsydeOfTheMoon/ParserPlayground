@@ -24,6 +24,17 @@ def main():
 	newEntry1.StaticTurnFrames = 4
 	table1.Entries[0].Entries.append(newEntry1)
 
+	# ...and a second, because why not?
+	newEntry2 = FtdEntryTypes.FLDPLAYERSPEED()
+	newEntry2.FieldMajorId = 1
+	newEntry2.FieldMinorId = 1
+	newEntry2.WalkSpeed = 50
+	newEntry2.RunSpeed = 100
+	newEntry2.AccelFrames = 4
+	newEntry2.DecelFrames = 4
+	newEntry2.StaticTurnFrames = 4
+	table1.Entries[0].Entries.append(newEntry2)
+
 	# save the results
 	tablePath2 = "Scripts/Assets/MODDED_FLDPLAYERSPEED.FTD"
 	table1.write_right(tablePath2, filename=tableName)

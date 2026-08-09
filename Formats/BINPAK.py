@@ -11,6 +11,7 @@ class AtlusArchive(Serializable):
 
 		self.EntryCount = None
 		self.Entries = None
+		self.Padding = None
 
 	def __rw_hook__(self, rw):
 
@@ -34,11 +35,16 @@ class AtlusArchive(Serializable):
 			if self.IsOldVersion:
 				if rw.is_constructlike:
 					self.Entries = list()
+					self.Padding = list()
 				i = 0
 				while (rw.is_constructlike and rw.peek_bytestream(1) != b"") or (rw.is_parselike and i < self.EntryCount):
 					if rw.is_constructlike:
 						self.Entries.append(None)
+						self.Padding.append(None)
 					self.Entries[i] = rw.rw_obj(self.Entries[i], FileEntry, self.NamesLength)
+					paddingSize = (64 - (rw.tell() % 64)) if (rw.tell() % 64) else 0
+					self.Padding[i] = rw.rw_bytestring(self.Padding[i], paddingSize)
+					assert all(not b for b in self.Padding[i])
 					i += 1
 				self.EntryCount = len(self.Entries)
 			else:
@@ -46,7 +52,7 @@ class AtlusArchive(Serializable):
 				self.Entries = rw.rw_objs(self.Entries, FileEntry, self.EntryCount, self.NamesLength)
 
 		failed = False 
-		try:		   
+		try: 
 			rw.assert_eof()																																											 
 		except Exception:
 			print("Failed to read file!")
@@ -61,8 +67,10 @@ class FileEntry(Serializable):
 		self.Size = None
 		self.Data = None
 
-	def __rw_hook__(self, rw, namelength):
+	def __rw_hook__(self, rw, namelength, cstring=False):
+		#self.Name = rw.rw_bytestring(self.Name, namelength)
 		self.Name = rw.rw_string(self.Name, namelength, encoding="ascii")
+		#self.Name = rw.rw_cstring(self.Name, namelength, encoding="ascii")
 		self.Size = rw.rw_uint32(self.Size)
 		self.Data = rw.rw_bytestring(self.Data, self.Size)
 		assert len(self.Data) == self.Size

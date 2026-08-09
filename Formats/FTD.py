@@ -71,17 +71,27 @@ class Table(Serializable):
 					self.DataCount = len(self.Entries) if self.Entries else 0
 				self.DataCount = rw.rw_int16(self.DataCount)
 				self.DataOffsets = rw.rw_uint32s(self.DataOffsets, self.DataCount)
+				reserve_size = 16 - (rw.tell() % 16)
+				self.RESERVE = rw.rw_bytestring(self.RESERVE, reserve_size)
+				assert self.RESERVE == b"\0"*reserve_size
 			else:
 				# idk about these ones, bois
 				self.UNK1 = rw.rw_uint32(self.UNK1)
 				assert self.UNK1 == 1
 				self.UNK2 = rw.rw_uint32(self.UNK2)
 				assert self.UNK2 == 32
-				self.RESERVE = rw.rw_bytestring(self.RESERVE, 12)
-				assert self.RESERVE == b"\0"*12
+				#self.RESERVE = rw.rw_bytestring(self.RESERVE, 12)
+				#assert self.RESERVE == b"\0"*12
+				reserve_size = 16 - (rw.tell() % 16)
+				self.RESERVE = rw.rw_bytestring(self.RESERVE, reserve_size)
+				assert self.RESERVE == b"\0"*reserve_size
 				self.DataType = 0
 				self.DataCount = 1
 				self.DataOffsets = [rw.tell()]
+
+			#print(rw.tell(), rw.tell() % 16, 16 - (rw.tell() % 16), self.DataOffsets[0])
+			##print(rw._bytestream.peek())
+			print(rw.tell(), self.DataOffsets[0])
 
 			self.EntryPads = [None]*self.DataCount
 			if rw.is_constructlike: # reader
@@ -107,14 +117,18 @@ class Table(Serializable):
 						self.Entries[i] = rw.rw_obj(self.Entries[i], FtdList, filename)
 
 			# some tables pad when rw.tell % 8 == 0... others don't. cool. cool cool cool.
-			paddingSize = (8 - (rw.tell() % 8)) if (rw.tell() % 8) else 0
+			#paddingSize = (8 - (rw.tell() % 8)) if (rw.tell() % 8) else 0
+			paddingSize = 16 - (rw.tell() % 16)
 			if rw.is_parselike:
 				self.Padding = b"\x00"*paddingSize
 			self.Padding = rw.rw_bytestring(self.Padding, paddingSize)
-			assert self.Padding == b"\x00"*paddingSize
+			##print(self.Padding)
+			#assert self.Padding == b"\x00"*paddingSize
 
 			# for some reason the ttr tables repeat the header (0-16) at the footer.................
-			if rw.is_parselike and self.Endianness == "<":
+			#if rw.is_parselike and self.Endianness == "<":
+			if self.Endianness == "<":
+				print("!!")
 				self.Version = rw.rw_uint32(self.Version)
 				self.Magic = rw.rw_string(self.Magic, 4, encoding="ascii")
 				if rw.is_parselike: # writer
@@ -130,13 +144,13 @@ class Table(Serializable):
 			# I suspect it's just not actually used in the readers and thus not inherently updated
 			#assert rw.tell() == self.FileSize or rw.tell() == self.FileSize - 8 or rw.tell() == self.FileSize + 8
 
-		"""failed = False
+		failed = False
 		try:
 			rw.assert_eof()
 		except Exception:
 			print("Failed to read file!")
 			remainder = rw._bytestream.peek()
-			print(len(remainder), remainder)"""
+			print(len(remainder), remainder)
 
 
 class FtdString(Serializable):
@@ -300,6 +314,165 @@ class FtdEntryTypes(Serializable):
 		def __init__(self):
 			super(FtdEntryTypes.POL_0, self).__init__()
 
+
+	class POL_1(Serializable):
+
+		def __init__(self):
+			self.Priority = None
+
+			self.Bitflags = [None]*8
+
+			self.UnkInt1 = None
+
+			self.UnkShorts1 = None
+			self.UnkShorts2 = None
+
+			self.StartMonth = None
+			self.StartDay = None
+			self.StartTime = None
+
+			self.EndMonth = None
+			self.EndDay = None
+			self.EndTime = None
+
+			self.UnkByte1 = None
+			self.UnkByte2 = None
+
+			self.UnkShort1 = None
+
+			self.UnkByte3 = None
+			self.UnkByte4 = None
+
+			self.UnkShort2 = None
+			self.UnkShort3 = None
+			self.UnkShort4 = None
+
+			self.ResourceHandle = None
+
+			self.UnkShort5 = None
+			self.InterpolationParameters = None
+			self.UnkShort6 = None
+			self.RGBA1 = None
+			self.UnkInt2 = None
+			self.RGBA2 = None
+			self.RGBA3 = None
+			self.UnkShort7 = None
+
+			self.UNUSED = [None]*10
+
+		def __rw_hook__(self, rw, datasize):
+			# always -1 except in F022_001.POL ... fully speculating on the name, lol
+			self.Priority = rw.rw_int32(self.Priority)
+
+			self.Bitflags[0] = rw.rw_obj(self.Bitflags[0], Bitflag)
+			self.Bitflags[1] = rw.rw_obj(self.Bitflags[1], Bitflag)
+
+			# always 0 except in F001_006.POL, where it's 461... could still be a bitflag, tbh
+			self.UnkInt1 = rw.rw_uint32(self.UnkInt1)
+
+			self.UNUSED[0] = rw.rw_uint32(self.UNUSED[0])
+			self.UNUSED[1] = rw.rw_uint32(self.UNUSED[1])
+
+			self.Bitflags[2] = rw.rw_obj(self.Bitflags[2], Bitflag)
+			self.Bitflags[3] = rw.rw_obj(self.Bitflags[3], Bitflag)
+
+			self.UNUSED[2] = rw.rw_uint32(self.UNUSED[2])
+			self.UNUSED[3] = rw.rw_uint32(self.UNUSED[3])
+			self.UNUSED[4] = rw.rw_uint32(self.UNUSED[4])
+
+			self.Bitflags[4] = rw.rw_obj(self.Bitflags[4], Bitflag)
+			self.Bitflags[5] = rw.rw_obj(self.Bitflags[5], Bitflag)
+			self.Bitflags[6] = rw.rw_obj(self.Bitflags[6], Bitflag)
+			self.Bitflags[7] = rw.rw_obj(self.Bitflags[7], Bitflag)
+
+			self.UNUSED[5] = rw.rw_uint32(self.UNUSED[5])
+
+			self.UnkShorts1 = rw.rw_uint16s(self.UnkShorts1, 4)
+			self.UnkShorts2 = rw.rw_uint16s(self.UnkShorts2, 4)
+
+			self.StartMonth = rw.rw_uint8(self.StartMonth)
+			self.StartDay = rw.rw_uint8(self.StartDay)
+			self.StartTime = rw.rw_uint8(self.StartTime)
+
+			self.EndMonth = rw.rw_uint8(self.EndMonth)
+			self.EndDay = rw.rw_uint8(self.EndDay)
+			self.EndTime = rw.rw_uint8(self.EndTime)
+
+			self.UnkByte1 = rw.rw_int8(self.UnkByte1)
+			self.UnkByte2 = rw.rw_int8(self.UnkByte1)
+
+			self.UnkShort1 = rw.rw_int16(self.UnkShort1)
+
+			self.UnkByte3 = rw.rw_int8(self.UnkByte3)
+			self.UnkByte4 = rw.rw_int8(self.UnkByte4)
+
+			self.UnkShort2 = rw.rw_int16(self.UnkShort2)
+			self.UnkShort3 = rw.rw_int16(self.UnkShort3)
+			self.UnkShort4 = rw.rw_int16(self.UnkShort4)
+
+			self.UNUSED[6] = rw.rw_uint32(self.UNUSED[6])
+
+			self.ResourceHandle = rw.rw_uint16(self.ResourceHandle)
+
+			self.UnkShort5 = rw.rw_int16(self.UnkShort5)
+			# at least, it kind of looks like interpolation parameters...
+			self.InterpolationParameters = rw.rw_uint32(self.InterpolationParameters)
+
+			self.UnkShort6 = rw.rw_int16(self.UnkShort6)
+			self.RGBA1 = rw.rw_uint32(self.RGBA1)
+
+			self.UnkInt2 = rw.rw_uint32(self.UnkInt2)
+			self.RGBA2 = rw.rw_uint32(self.RGBA2)
+
+			self.UNUSED[7] = rw.rw_uint32(self.UNUSED[7])
+
+			self.RGBA3 = rw.rw_uint32(self.RGBA3)
+
+			self.UNUSED[8] = rw.rw_uint32(self.UNUSED[8])
+
+			self.UnkShort7 = rw.rw_int16(self.UnkShort7)
+
+			self.UNUSED[9] = rw.rw_uint16(self.UNUSED[9])
+
+			assert not any(self.UNUSED)
+
+		def stringify(self):
+			ret = list()
+			ret.append("Priority: {}".format(self.Priority))
+			ret.append("\tResource Handle: {}".format(self.ResourceHandle))
+			ret.append("\tDate Range: {}/{} ({}) - {}/{} ({})".format(self.StartMonth, self.StartDay, TimesOfDay(self.StartTime).name, self.EndMonth, self.EndDay, TimesOfDay(self.EndTime).name))
+			ret.append("\tInterpolation: {}".format(hex(self.InterpolationParameters)))
+			ret.append("\tBitflags:")
+			for i in range(len(self.Bitflags)):
+				ret.append("\t\t({}) {}".format(i+1, self.Bitflags[i].stringify()))
+			ret.append("\tColors:")
+			ret.append("\t\tRGBA #1: {}".format(hex(self.RGBA1)))
+			ret.append("\t\tRGBA #2: {}".format(hex(self.RGBA2)))
+			ret.append("\t\tRGBA #3: {}".format(hex(self.RGBA3)))
+			ret.append("\tUnk #1: {}".format(self.UnkInt1))
+			ret.append("\tUnk #2-5: {}".format(" / ".join(str(x) for x in self.UnkShorts1)))
+			ret.append("\tUnk #6-9: {}".format(" / ".join(str(x) for x in self.UnkShorts2)))
+			ret.append("\tUnk #10-12: {} / {} / {}".format(self.UnkByte1, self.UnkByte2, self.UnkShort1))
+			ret.append("\tUnk #13-17: {} / {} / {} / {} / {}".format(self.UnkByte3, self.UnkByte4, self.UnkShort2, self.UnkShort3, self.UnkShort4))
+			ret.append("\tUnk #18-21: {} / {} / {} / {}".format(self.UnkShort5, self.UnkShort6, self.UnkInt2, self.UnkShort7))
+			return "\n".join(ret)
+			"""return "Priority: {}, Bitflag #1: {}, Bitflag #2: {}, Unk #1: {}, Bitflag #3: {}, Bitflag #4: {}, Bitflag #5: {}, Bitflag #6: {}, Bitflag #7: {}, Bitflag #8: {}, Unk #2-5: {}, Unk #6-9: {}, Start: {}/{} ({}), End: {}/{} ({}), Unk #10-12: {}/{}/{}".format(
+				self.Priority,
+				self.Bitflags[0].stringify(),
+				self.Bitflags[1].stringify(),
+				self.UnkInt1,
+				self.Bitflags[2].stringify(),
+				self.Bitflags[3].stringify(),
+				self.Bitflags[4].stringify(),
+				self.Bitflags[5].stringify(),
+				self.Bitflags[6].stringify(),
+				self.Bitflags[7].stringify(),
+				"/".join(str(x) for x in self.UnkShorts1),
+				"/".join(str(x) for x in self.UnkShorts2),
+				self.StartMonth, self.StartDay, TimesOfDay(self.StartTime).name,
+				self.EndMonth, self.EndDay, TimesOfDay(self.EndTime).name,
+				self.UnkByte1, self.UnkByte2, self.UnkShort1,
+			)"""
 
 	class chatDataTable(Serializable):
 
@@ -708,6 +881,31 @@ class FtdEntryTypes(Serializable):
 						lines.append("      ({}) {}".format(i+1, self.TreasureEncounters[i].stringify()))
 			lines.append("    Reaper Encounter: {}".format(self.ReaperEncounter.stringify()))
 			return "\n".join(lines)
+
+
+	class EVTLEADINGDATATABLE(Serializable):
+
+		def __init__(self):
+			self.MajorId1 = None
+			self.MinorId1 = None
+			self.MajorId2 = None
+			self.MinorId2 = None
+			self.UNUSED = [None]*2
+
+		def __rw_hook__(self, rw, datasize):
+
+			self.MajorId1 = rw.rw_uint16(self.MajorId1)
+			self.MinorId1 = rw.rw_uint16(self.MinorId1)
+
+			self.MajorId2 = rw.rw_uint16(self.MajorId2)
+			self.MinorId2 = rw.rw_uint16(self.MinorId2)
+
+			for i in range(2):
+				self.UNUSED[i] = rw.rw_uint32(self.UNUSED[i])
+				assert not self.UNUSED[i]
+
+		def stringify(self):
+			return f"Event #1: E{self.MajorId1:03d}_{self.MinorId1:03d}, Event #2: E{self.MajorId2:03d}_{self.MinorId2:03d}"
 
 
 	class fclCmbComText(JustAString):
@@ -1359,6 +1557,18 @@ class cmmFunction(Serializable):
 		)
 
 
+class Bitflag(Serializable):
+
+	def __init__(self):
+		self.Index = None
+
+	def __rw_hook__(self, rw):
+		self.Index = rw.rw_uint32(self.Index)
+
+	def stringify(self):
+		return "{} + {}".format(hex(self.Index & 0xF0000000), self.Index & 0x0FFFFFFF)
+
+
 class FtdListTypes(Enum):
 	DataEntries	= 0
 	EmbeddedFtd	= 1
@@ -1493,3 +1703,15 @@ class TravelTypes(Enum):
 	ThievesDen			= 38
 	TokyoMap			= 34
 	ThirdSem			= 48  # first week of thirdsem???
+
+
+class TimesOfDay(Enum):
+	EarlyMorning	= 0
+	Morning			= 1
+	Daytime			= 2
+	Lunchtime		= 3
+	Afternoon		= 4
+	AfterSchool		= 5
+	Evening			= 6
+	LateNight		= 7
+	InBetween		= 255  # i guess...
